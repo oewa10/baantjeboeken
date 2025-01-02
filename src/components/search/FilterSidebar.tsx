@@ -23,10 +23,46 @@ interface FilterSidebarProps {
 }
 
 const facilities = [
-  { id: 'showers', label: 'Showers' },
-  { id: 'changing_rooms', label: 'Changing Rooms' },
-  { id: 'parking', label: 'Parking' },
-  { id: 'cafe', label: 'Café' },
+  {
+    id: 'changing_rooms',
+    label: 'Changing Rooms',
+    description: 'Includes showers and lockers'
+  },
+  {
+    id: 'parking',
+    label: 'Parking',
+    description: 'Free or paid parking available'
+  },
+  {
+    id: 'restaurant',
+    label: 'Restaurant',
+    description: 'Restaurant, café, or bar for drinks and snacks'
+  },
+  {
+    id: 'equipment_rental',
+    label: 'Equipment Rental',
+    description: 'Rent rackets and balls'
+  },
+  {
+    id: 'padel_shop',
+    label: 'Padel Shop',
+    description: 'Shop for buying equipment'
+  },
+  {
+    id: 'bike_storage',
+    label: 'Bike Storage',
+    description: 'For cyclists'
+  },
+  {
+    id: 'wheelchair_access',
+    label: 'Wheelchair Access',
+    description: 'Accessible for people with disabilities'
+  },
+  {
+    id: 'charging_points',
+    label: 'Charging Points',
+    description: 'For electric cars or bikes'
+  }
 ]
 
 export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebarProps) {
@@ -88,7 +124,7 @@ export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebar
         <div className="space-y-8">
           {/* Price Range */}
           <div>
-            <Label className="text-sm font-medium mb-4 block">Price Range (€/hour)</Label>
+            <Label className="text-sm font-medium mb-4 block">Price per hour</Label>
             <div className="px-2">
               <Slider
                 defaultValue={[initialFilters.priceRange[0], initialFilters.priceRange[1]]}
@@ -108,7 +144,7 @@ export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebar
 
           {/* Rating */}
           <div>
-            <Label className="text-sm font-medium mb-4 block">Minimum Rating</Label>
+            <Label className="text-sm font-medium mb-4 block">Minimum rating</Label>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((rating) => (
                 <Button
@@ -128,7 +164,7 @@ export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebar
 
           {/* Distance */}
           <div>
-            <Label className="text-sm font-medium mb-4 block">Distance</Label>
+            <Label className="text-sm font-medium mb-4 block">Maximum distance</Label>
             <div className="px-2">
               <Slider
                 defaultValue={[initialFilters.distance]}
@@ -149,7 +185,7 @@ export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebar
             <Label className="text-sm font-medium mb-4 block">Facilities</Label>
             <div className="space-y-3">
               {facilities.map((facility) => (
-                <div key={facility.id} className="flex items-center space-x-2">
+                <div key={facility.id} className="flex items-start space-x-2">
                   <Checkbox
                     id={facility.id}
                     checked={initialFilters.facilities.includes(facility.id)}
@@ -157,12 +193,17 @@ export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebar
                       handleFacilityChange(facility.id, checked as boolean)
                     }
                   />
-                  <label
-                    htmlFor={facility.id}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {facility.label}
-                  </label>
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor={facility.id}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {facility.label}
+                    </label>
+                    <p className="text-sm text-neutral-600">
+                      {facility.description}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>

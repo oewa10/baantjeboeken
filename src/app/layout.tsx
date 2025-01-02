@@ -3,6 +3,7 @@ import './globals.css'
 import { cn } from '@/lib/utils'
 import { fontSans } from '@/lib/fonts'
 import { ClientLayout } from '@/components/providers/ClientLayout'
+import Script from 'next/script'
 
 const fontDisplay = Playfair_Display({
   subsets: ['latin'],
@@ -21,6 +22,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className={cn(
         "min-h-screen bg-neutral-50 font-sans antialiased",
         fontSans.variable,

@@ -19,6 +19,18 @@ interface Filters {
   facilities: string[]
 }
 
+// Convert filter names to database names
+const facilityNameMap: Record<string, string> = {
+  'changing_rooms': 'Changing Rooms',
+  'parking': 'Parking',
+  'restaurant': 'Restaurant',
+  'equipment_rental': 'Equipment Rental',
+  'padel_shop': 'Padel Shop',
+  'bike_storage': 'Bike Storage',
+  'wheelchair_access': 'Wheelchair Access',
+  'charging_points': 'Charging Points'
+}
+
 export default function SearchPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -46,22 +58,63 @@ export default function SearchPage() {
             name,
             city,
             location,
-            courts (*)
+            courts (
+              id,
+              name,
+              type,
+              price_per_hour,
+              rating,
+              court_facilities (
+                name
+              )
+            )
           `)
 
         if (location) {
           query = query.ilike('city', `%${location}%`)
         }
 
-        const { data, error } = await query
+        const { data: clubsData, error } = await query
 
         if (error) {
           console.error('Error fetching clubs:', error)
           return
         }
 
-        console.log('Raw clubs data:', data)
-        setClubs(data || [])
+        console.log('Clubs data:', clubsData)
+
+        // Filter clubs based on facilities
+        const filteredClubsData = clubsData.map(club => ({
+          ...club,
+          courts: club.courts?.map(court => ({
+            ...court,
+            facilities: court.court_facilities || []
+          }))
+        })).filter(club => {
+          // If no facilities selected, include all clubs
+          if (filters.facilities.length === 0) return true
+
+          // Check if any court has all the selected facilities
+          return club.courts?.some(court => {
+            const courtFacilityNames = new Set(
+              court.facilities.map(f => f.name)
+            )
+            
+            console.log('Court facilities for', court.name, ':', Array.from(courtFacilityNames))
+            
+            const hasAllFacilities = filters.facilities.every(facilityId => {
+              const dbName = facilityNameMap[facilityId]
+              const hasFacility = courtFacilityNames.has(dbName)
+              console.log(`Checking ${facilityId} (${dbName}):`, hasFacility)
+              return hasFacility
+            })
+            
+            console.log('Has all facilities:', hasAllFacilities)
+            return hasAllFacilities
+          })
+        })
+
+        setClubs(filteredClubsData)
       } catch (error) {
         console.error('Error:', error)
       } finally {
@@ -70,9 +123,10 @@ export default function SearchPage() {
     }
 
     fetchClubs()
-  }, [searchParams])
+  }, [searchParams, filters])
 
   const filteredClubs = clubs.filter(club => {
+    // Price filter
     if (filters.priceRange[0] > 0 || filters.priceRange[1] < 100) {
       const prices = club.courts?.map(court => court.price_per_hour) || []
       if (!prices.some(price => 
@@ -82,6 +136,7 @@ export default function SearchPage() {
       }
     }
 
+    // Rating filter
     if (filters.rating > 0) {
       const courtRatings = club.courts?.map(court => court.rating || 0) || []
       if (!courtRatings.some(rating => rating >= filters.rating)) {
@@ -89,115 +144,78 @@ export default function SearchPage() {
       }
     }
 
-    if (filters.facilities.length > 0 && 
-        !filters.facilities.every(facility => 
-          club.facilities?.includes(facility)
-        )) {
-      return false
-    }
-
     return true
   })
 
   const handleSearch = (location: string, date: string, timeSlot: string) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams()
+    if (location) params.set('location', location)
+    if (date) params.set('date', date)
+    if (timeSlot) params.set('timeSlot', timeSlot)
     
-    if (location) {
-      params.set('location', location)
-    } else {
-      params.delete('location')
-    }
-    
-    if (date) {
-      params.set('date', date)
-    } else {
-      params.delete('date')
-    }
-    
-    if (timeSlot) {
-      params.set('timeSlot', timeSlot)
-    } else {
-      params.delete('timeSlot')
-    }
+    router.push(`/search?${params.toString()}`)
+  }
 
-    const newPath = params.toString() ? `?${params.toString()}` : ''
-    router.push(`/search${newPath}`)
+  const handleFiltersChange = (newFilters: Filters) => {
+    setFilters(newFilters)
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="sticky top-0 z-10 bg-white border-b border-neutral-200">
-        <div className="container mx-auto px-4 py-4">
-          <SearchBar 
-            defaultLocation={searchParams.get('location') || ''}
-            defaultDate={searchParams.get('date') || ''}
-            defaultTimeSlot={searchParams.get('timeSlot') || ''}
-            onSearch={handleSearch}
-          />
-        </div>
+    <div className="container py-8">
+      <div className="mb-8">
+        <SearchBar onSearch={handleSearch} initialLocation={searchParams.get('location') || ''} />
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-neutral-900">
-              {filteredClubs.length} {filteredClubs.length === 1 ? 'court' : 'courts'} available
-            </h1>
-            {searchParams.get('location') && (
-              <p className="text-neutral-500 mt-1">
-                in {searchParams.get('location')}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-4">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="lg:hidden">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filters
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-full sm:w-[400px] p-0">
-                <div className="p-6">
-                  <FilterSidebar
-                    onFiltersChange={setFilters}
-                    initialFilters={filters}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
+        {/* Filters - Show in sheet on mobile, sidebar on desktop */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="mb-4 lg:hidden">
+              <Filter className="mr-2 h-4 w-4" />
+              Filters
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+            <FilterSidebar
+              onFiltersChange={handleFiltersChange}
+              initialFilters={filters}
+            />
+          </SheetContent>
+        </Sheet>
+
+        <div className="hidden lg:block">
+          <FilterSidebar
+            onFiltersChange={handleFiltersChange}
+            initialFilters={filters}
+          />
+        </div>
+
+        {/* Results */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <p className="text-muted-foreground">
+              {filteredClubs.length} {filteredClubs.length === 1 ? 'club' : 'clubs'} found
+            </p>
             <Button
               variant="outline"
               onClick={() => setShowMap(!showMap)}
-              className="hidden md:flex"
             >
-              {showMap ? 'Hide map' : 'Show map'}
+              {showMap ? 'Hide Map' : 'Show Map'}
             </Button>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] xl:grid-cols-[380px_1fr] gap-8">
-          <div className="hidden lg:block h-[calc(100vh-200px)] sticky top-[100px]">
-            <FilterSidebar
-              onFiltersChange={setFilters}
-              initialFilters={filters}
-            />
-          </div>
-          
-          <div className="space-y-8">
-            {showMap && (
-              <div className="rounded-xl overflow-hidden">
-                <MapView clubs={filteredClubs} className="h-[400px]" />
-              </div>
-            )}
-            {loading ? (
-              <div className="text-center py-12">
-                <h3 className="text-lg font-semibold">Loading courts...</h3>
-              </div>
-            ) : (
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-lg text-muted-foreground">Loading clubs...</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {showMap && (
+                <MapView clubs={filteredClubs} className="h-[400px] w-full rounded-lg border" />
+              )}
               <ClubGrid clubs={filteredClubs} />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

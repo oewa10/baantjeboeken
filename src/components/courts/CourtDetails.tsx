@@ -4,13 +4,20 @@ import { Court } from '@/lib/types/court'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { MapPin, Euro, ExternalLink } from 'lucide-react'
+import { MapPin, Euro, ExternalLink, Navigation2 } from 'lucide-react'
+import { getGoogleMapsUrl } from '@/lib/utils/maps'
 
 interface CourtDetailsProps {
   court: Court
 }
 
 export function CourtDetails({ court }: CourtDetailsProps) {
+  const handleRouteClick = () => {
+    if (court.club?.location) {
+      window.open(getGoogleMapsUrl(court.club.location), '_blank');
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -34,10 +41,16 @@ export function CourtDetails({ court }: CourtDetailsProps) {
           {court.club?.location && (
             <div className="flex items-center gap-2">
               <MapPin className="w-5 h-5 text-muted-foreground" />
-              <span>
-                Location available
-                {/* TODO: Add actual address/location display */}
-              </span>
+              <span>{court.club.location}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-2 text-primary-600 hover:text-primary-700"
+                onClick={handleRouteClick}
+              >
+                <Navigation2 className="w-4 h-4 mr-1" />
+                Route
+              </Button>
             </div>
           )}
         </div>

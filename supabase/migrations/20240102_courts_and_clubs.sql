@@ -18,16 +18,19 @@ TRUNCATE TABLE clubs CASCADE;
 TRUNCATE TABLE court_facilities CASCADE;
 TRUNCATE TABLE bookings CASCADE;
 
+-- Add location field to clubs table
+ALTER TABLE clubs ADD COLUMN location text;
+
 -- Insert clubs
 WITH inserted_clubs AS (
-    INSERT INTO clubs (name, city, created_at, updated_at) VALUES
-    ('Amsterdam Padel Center', 'Amsterdam', NOW(), NOW()),
-    ('Rotterdam Sports Complex', 'Rotterdam', NOW(), NOW()),
-    ('Amersfoort Tennis & Padel', 'Amersfoort', NOW(), NOW()),
-    ('Utrecht Padel Academy', 'Utrecht', NOW(), NOW()),
-    ('The Hague Sports Club', 'Den Haag', NOW(), NOW()),
-    ('Eindhoven Padel Hub', 'Eindhoven', NOW(), NOW()),
-    ('Groningen University Sports', 'Groningen', NOW(), NOW())
+    INSERT INTO clubs (name, city, location, created_at, updated_at) VALUES
+    ('Amsterdam Padel Center', 'Amsterdam', 'Rhôneweg 40, 1043 AH Amsterdam', NOW(), NOW()),
+    ('Rotterdam Sports Complex', 'Rotterdam', 'Maashaven Oostzijde 151, 3072 HS Rotterdam', NOW(), NOW()),
+    ('Amersfoort Tennis & Padel', 'Amersfoort', 'Barchman Wuytierslaan 93, 3819 AB Amersfoort', NOW(), NOW()),
+    ('Utrecht Padel Academy', 'Utrecht', 'Manitobadreef 8, 3565 CH Utrecht', NOW(), NOW()),
+    ('The Hague Sports Club', 'Den Haag', 'Laan van Poot 38C, 2566 EC Den Haag', NOW(), NOW()),
+    ('Eindhoven Padel Hub', 'Eindhoven', 'Antoon Coolenlaan 1, 5644 RX Eindhoven', NOW(), NOW()),
+    ('Groningen University Sports', 'Groningen', 'Blauwborgje 16, 9747 AC Groningen', NOW(), NOW())
     RETURNING id, name
 ),
 -- Insert courts

@@ -58,7 +58,7 @@ export default function CourtPage({ params }: { params: { id: string } }) {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div className="relative h-[60vh] bg-neutral-100">
+      <div className="relative h-[40vh] bg-neutral-100">
         <Image
           src={`/pictures/${court.type === 'indoor' ? 'knltb-padel-comp-091022-alyssa-van-heyst-photography-42.jpg' : 'padel-scaled.jpg'}`}
           alt={court.name}
@@ -70,9 +70,9 @@ export default function CourtPage({ params }: { params: { id: string } }) {
 
       {/* Content */}
       <div className="container mx-auto px-4 -mt-16 relative">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-7 space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -146,21 +146,17 @@ export default function CourtPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* Booking Section */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-semibold">€{court.price_per_hour}</span>
-                    <span className="text-neutral-600">/ hour</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-current text-primary-600" />
-                    <span className="font-medium">4.9</span>
-                  </div>
+          <div className="lg:col-span-5">
+            <div className="sticky top-24">
+              <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-semibold">€{court.price_per_hour}</span>
+                  <span className="text-neutral-600">/ hour</span>
                 </div>
 
-                <AvailabilityCalendar courtId={court.id} />
+                <div className="bg-white rounded-lg border border-neutral-200">
+                  <AvailabilityCalendar courtId={court.id} />
+                </div>
 
                 <Button className="w-full" size="lg">
                   Book this court

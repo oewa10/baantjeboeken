@@ -3,37 +3,34 @@ export interface Location {
   lng: number
 }
 
-export interface Court {
-  id: number
-  name: string
-  type: string
-  price_per_hour: number
-  club_id: number
-  description: string
-  city: string
-  rating: number
-  facilities?: CourtFacility[]
-  created_at?: string
-  updated_at?: string
-}
-
-export interface CourtFacility {
-  id: number
-  court_id: number
-  name: string
-}
-
 export interface Club {
   id: string
   name: string
-  location: {
-    lat: number
-    lng: number
-  }
-  facilities: string[]
-  booking_url?: string
-  created_at?: string
-  updated_at?: string
+  city: string
+  location?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Facility {
+  id: string
+  court_id: string
+  name: string
+}
+
+export interface Court {
+  id: string
+  name: string
+  type: 'indoor' | 'outdoor'
+  price_per_hour: number
+  club_id: string
+  description: string
+  city: string
+  rating: number
+  created_at: string
+  updated_at: string
+  club?: Club
+  facilities?: Facility[]
 }
 
 export interface Availability {
@@ -47,7 +44,7 @@ export interface Availability {
 }
 
 export interface CourtSearchFilters {
-  location?: Location
+  location?: string
   date?: Date
   minPrice?: number
   maxPrice?: number

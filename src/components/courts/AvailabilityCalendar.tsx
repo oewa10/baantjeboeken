@@ -54,22 +54,23 @@ export function AvailabilityCalendar({ courtId }: AvailabilityCalendarProps) {
         selected={selectedDate}
         onSelect={setSelectedDate}
         disabled={{ before: startOfToday() }}
-        className="rounded-md border shadow-sm"
+        className="w-full"
       />
 
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-neutral-900">Available time slots</h3>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-1.5">
           {timeSlots.map((time) => {
             const isSelected = selectedTime === time
             return (
               <Button
                 key={time}
-                variant={isSelected ? 'default' : 'outline'}
+                variant="outline"
                 className={cn(
-                  'text-sm py-2 h-auto',
-                  isSelected && 'bg-primary-600 text-white hover:bg-primary-700',
-                  !isSelected && 'hover:border-primary-600 hover:text-primary-600'
+                  'text-sm py-1.5 h-auto px-2 transition-colors',
+                  isSelected 
+                    ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-600 hover:text-white hover:border-primary-600' 
+                    : 'bg-white text-neutral-900 hover:bg-neutral-50 hover:text-primary-600 hover:border-primary-600'
                 )}
                 onClick={() => setSelectedTime(time)}
               >

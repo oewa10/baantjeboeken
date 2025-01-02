@@ -36,13 +36,8 @@ export async function middleware(request: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession()
 
-  // If user is signed in and the current path is /login or /, redirect to /courts
-  if (session && ['/login', '/'].includes(request.nextUrl.pathname)) {
-    return NextResponse.redirect(new URL('/courts', request.url))
-  }
-
   // Protected routes - redirect to login if not authenticated
-  if (!session && request.nextUrl.pathname.startsWith('/courts')) {
+  if (!session && request.nextUrl.pathname.startsWith('/bookings')) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -50,5 +45,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/login', '/courts/:path*'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }

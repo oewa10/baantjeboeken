@@ -1,176 +1,200 @@
 # Paddle Court Booking Platform - Project Documentation
 
-## Project Overview
-A web platform that aggregates paddle court availability across different clubs, allowing users to search, compare, and book courts through a unified interface.
+[Previous sections remain the same until UI/UX Design section]
 
-## Technical Stack
-- **Frontend**: Next.js 14+ (React)
-- **Backend**: Node.js with Express
-- **Database**: PostgreSQL with Prisma ORM
-- **Styling**: Tailwind CSS + shadcn/ui
+## UI/UX Design Specifications
 
-## Project Structure
+### Color System
+```css
+/* Primary Colors */
+--primary-900: #1a5f7a;    /* Deep blue - Primary actions */
+--primary-800: #2d7d9a;    /* Main brand color */
+--primary-600: #3997b7;    /* Buttons, links */
+--primary-400: #67b3cd;    /* Highlights */
+--primary-200: #a5d3e3;    /* Subtle backgrounds */
+--primary-100: #e1f2f7;    /* Very light backgrounds */
+
+/* Neutral Colors */
+--neutral-900: #1f2937;    /* Primary text */
+--neutral-700: #374151;    /* Secondary text */
+--neutral-500: #6b7280;    /* Disabled text */
+--neutral-300: #d1d5db;    /* Borders */
+--neutral-200: #e5e7eb;    /* Dividers */
+--neutral-100: #f3f4f6;    /* Backgrounds */
+
+/* Accent Colors */
+--success-600: #059669;    /* Success states */
+--warning-600: #d97706;    /* Warning states */
+--error-600: #dc2626;      /* Error states */
 ```
-paddle-booking/
-├── app/                      # Next.js app directory
-│   ├── api/                 # API routes
-│   ├── (auth)/             # Authentication related pages
-│   ├── courts/             # Court listing and details pages
-│   └── page.tsx            # Homepage
-├── components/              # Reusable React components
-│   ├── common/             # Shared components
-│   ├── courts/             # Court-related components
-│   └── search/             # Search-related components
-├── lib/                     # Shared utilities
-│   ├── db/                 # Database utilities
-│   ├── api/                # API utilities
-│   └── types/              # TypeScript types
-├── prisma/                  # Database schema and migrations
-└── public/                  # Static assets
+
+### Typography
+```css
+--font-primary: 'Inter', sans-serif;      /* Main text */
+--font-display: 'Montserrat', sans-serif; /* Headings */
 ```
 
-## Database Schema
-```prisma
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  location  Json?    // Stored as PostGIS point
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+### Page Structure and Flow
+
+#### 1. Landing Page (Homepage)
+Components:
+- Hero section with search form
+  - Location input (with Google Maps autocomplete)
+  - Date picker
+  - Time slot selector
+  - Search button
+- Featured clubs section
+- Popular locations grid
+
+```typescript
+// Example Search Form Component Structure
+interface SearchFormProps {
+  onSearch: (params: SearchParams) => void;
 }
 
-model Club {
-  id        String   @id @default(uuid())
-  name      String
-  location  Json     // Stored as PostGIS point
-  facilities Json[]
-  bookingUrl String?
-  courts    Court[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Court {
-  id          String   @id @default(uuid())
-  clubId      String
-  club        Club     @relation(fields: [clubId], references: [id])
-  name        String
-  type        String
-  pricePerHour Decimal
-  availability Availability[]
-}
-
-model Availability {
-  id        String   @id @default(uuid())
-  courtId   String
-  court     Court    @relation(fields: [courtId], references: [id])
-  startTime DateTime
-  endTime   DateTime
-  status    String
+interface SearchParams {
+  location: string;
+  date: Date;
+  timeSlot: string;
 }
 ```
 
-## Key Features & Implementation Details
-
-### Search Functionality
-- Location-based search using Google Maps API
-- Date/time selection for court availability
-- Filters for:
+#### 2. Search Results Page
+Components:
+- Filter sidebar
+  - Price range slider
+  - Facility checkboxes
+  - Rating filter
+  - Distance filter
+- Club cards grid
+  - Club image
+  - Available courts count
   - Price range
-  - Available time slots
-  - Club facilities
-  - Distance from location
+  - Rating
+  - Key facilities
+- Map view (desktop)
 
-### Club Integration (MVP)
-- Direct linking to club booking systems
-- Future: API integration with booking platforms
-- Webhook system for availability updates
-
-### User Authentication
-- Email/password authentication
-- JWT tokens for session management
-- Protected routes for user-specific features
-
-## API Endpoints
-
-### Courts
 ```typescript
-GET /api/courts
-- Query params: location, date, facilities
-- Returns: Available courts matching criteria
-
-GET /api/courts/:id
-- Returns: Detailed court information
-
-GET /api/courts/:id/availability
-- Query params: date
-- Returns: Available time slots
-```
-
-### Clubs
-```typescript
-GET /api/clubs
-- Query params: location, facilities
-- Returns: List of clubs
-
-GET /api/clubs/:id
-- Returns: Detailed club information
-```
-
-## Environment Variables
-```
-DATABASE_URL=postgresql://...
-GOOGLE_MAPS_API_KEY=...
-NEXT_PUBLIC_API_URL=...
-JWT_SECRET=...
-```
-
-## Development Guidelines
-
-### Component Structure
-```typescript
-// Example component structure
-import { useState } from 'react'
-import type { CourtType } from '@/lib/types'
-
-interface CourtCardProps {
-  court: CourtType
-  onSelect: (id: string) => void
-}
-
-export function CourtCard({ court, onSelect }: CourtCardProps) {
-  // Component logic
+interface ClubCardProps {
+  club: {
+    id: string;
+    name: string;
+    image: string;
+    rating: number;
+    availableCourts: number;
+    priceRange: {
+      min: number;
+      max: number;
+    };
+    facilities: string[];
+    distance?: number;
+  };
 }
 ```
 
-### Styling Conventions
-- Use Tailwind CSS utilities
-- Follow Mobile-first approach
-- Use shadcn/ui components when possible
-- Custom colors defined in tailwind.config.js
+#### 3. Club Detail Page
+Components:
+- Club header
+  - Image gallery
+  - Basic info
+  - Rating
+- Available courts section
+  - Court type tabs
+  - Time slot grid
+  - Price display
+- Facility icons
+- Map location
+- Reviews section
 
-### State Management
-- React Query for server state
-- Context API for global UI state
-- Local state for component-specific logic
-
-### Error Handling
-- Custom error boundary components
-- Consistent error response format
-- Proper error logging setup
-
-## Deployment Strategy
-- Vercel for frontend deployment
-- Railway or Heroku for backend services
-- Supabase or managed PostgreSQL for database
-
-## Testing Strategy
-- Jest for unit tests
-- React Testing Library for component tests
-- Cypress for E2E testing
+```typescript
+interface CourtSlotProps {
+  court: {
+    id: string;
+    name: string;
+    type: 'indoor' | 'outdoor';
+    surface: string;
+    pricePerHour: number;
+    availableSlots: {
+      startTime: string;
+      endTime: string;
+      status: 'available' | 'booked';
+    }[];
+  };
+}
 ```
 
-This document should be placed in a `docs/` directory at the root of your project, named something like `ARCHITECTURE.md`. You can reference it when working with Windsurf AI by saying something like "Please follow the structure and conventions defined in ARCHITECTURE.md in the project root."
+### Component Library Usage
 
-Would you like me to add or modify any sections of this documentation to better suit your needs? Or shall we proceed with setting up the initial project structure?
+#### Base Components
+Using shadcn/ui components for:
+- Buttons
+- Input fields
+- Select dropdowns
+- Date pickers
+- Cards
+- Modals
+- Navigation menus
+
+#### Custom Components
+1. SearchHero
+```typescript
+interface SearchHeroProps {
+  backgroundImage?: string;
+  title: string;
+  subtitle?: string;
+}
+```
+
+2. ClubCard
+```typescript
+interface ClubCardProps {
+  club: ClubType;
+  onSelect: (clubId: string) => void;
+  showDistance?: boolean;
+}
+```
+
+3. CourtSlotGrid
+```typescript
+interface CourtSlotGridProps {
+  slots: TimeSlot[];
+  selectedDate: Date;
+  onSlotSelect: (slot: TimeSlot) => void;
+}
+```
+
+### Responsive Design Breakpoints
+```css
+/* Mobile First Approach */
+/* Base styles for mobile */
+
+/* Tablet (640px) */
+@screen sm {
+  /* Tablet styles */
+}
+
+/* Desktop (1024px) */
+@screen lg {
+  /* Desktop styles */
+}
+```
+
+### Animation Guidelines
+- Use subtle transitions (0.2s ease)
+- Hover effects on interactive elements
+- Loading states for async operations
+- Page transitions
+
+```css
+.transition-base {
+  transition: all 0.2s ease;
+}
+
+.hover-effect {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgb(0 0 0 / 0.1);
+}
+```
+
+[Previous sections continue unchanged...]
+

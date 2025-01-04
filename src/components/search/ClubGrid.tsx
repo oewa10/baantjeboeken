@@ -50,7 +50,7 @@ export function ClubGrid({ clubs }: ClubGridProps) {
                 />
                 {bestCourt && (
                   <div className="absolute top-4 right-4">
-                    <Badge className="bg-white/90">
+                    <Badge className="bg-white text-black font-medium shadow-sm">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
                       {bestCourt.rating.toFixed(1)}
                     </Badge>
@@ -59,10 +59,10 @@ export function ClubGrid({ clubs }: ClubGridProps) {
               </div>
               <div className="p-4 space-y-3">
                 <div>
-                  <h3 className="font-semibold text-lg">{club.name}</h3>
+                  <h3 className="font-semibold text-lg truncate">{club.name}</h3>
                   <div className="flex items-center text-neutral-500">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    <span className="text-sm">{club.city}</span>
+                    <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+                    <span className="text-sm truncate">{club.city}</span>
                   </div>
                 </div>
 
@@ -80,21 +80,17 @@ export function ClubGrid({ clubs }: ClubGridProps) {
                     <div className="h-[1px] w-full bg-neutral-200" />
                     <div className="space-y-2">
                       <div className="flex items-center text-sm font-medium">
-                        <Trophy className="w-4 h-4 text-yellow-400 mr-1.5" />
+                        <Trophy className="w-4 h-4 text-yellow-400 mr-1.5 flex-shrink-0" />
                         Top Rated Court
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {bestCourt.surface}
+                        <div className="flex items-center space-x-2 min-w-0">
+                          <Badge variant="secondary" className="text-xs flex-shrink-0">
+                            {bestCourt.type}
                           </Badge>
-                          <span className="text-neutral-500">
-                            {bestCourt.name}
+                          <span className="text-neutral-500 truncate">
+                            {bestCourt.name.replace(club.name + ' - ', '')}
                           </span>
-                        </div>
-                        <div className="flex items-center text-yellow-500 font-medium">
-                          <Star className="w-3.5 h-3.5 fill-current mr-0.5" />
-                          {bestCourt.rating.toFixed(1)}
                         </div>
                       </div>
                     </div>

@@ -4,6 +4,12 @@ import { FilterSidebar } from "@/components/search/FilterSidebar"
 import { ClubGrid } from "@/components/search/ClubGrid"
 import { MapView } from "@/components/search/MapView"
 import { SearchBar } from "@/components/search/SearchBar"
+import { LocationPicker } from "@/components/search/LocationPicker"
+import { DatePicker } from "@/components/search/DatePicker"
+import { TimeSelector } from "@/components/search/TimeSelector"
+import { Loader2 } from "lucide-react"
+import { MapPin } from "lucide-react"
+import { X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -11,16 +17,17 @@ import { Club } from "@/lib/types/court"
 import { Button } from "@/components/ui/button"
 import { Filter } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { calculateDistance } from "@/lib/utils/distance"
 
 interface Filters {
-  priceRange: [number, number]
-  rating: number
-  distance: number
   facilities: string[]
+  rating: number
+  maxRange: number
+  location: string
 }
 
 // Convert filter names to database names
-const facilityNameMap: Record<string, string> = {
+const facilityNameMap: { [key: string]: string } = {
   'changing_rooms': 'Changing Rooms',
   'parking': 'Parking',
   'restaurant': 'Restaurant',
@@ -38,11 +45,13 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true)
   const [showMap, setShowMap] = useState(false)
   const [filters, setFilters] = useState<Filters>({
-    priceRange: [0, 100],
+    facilities: [],
     rating: 0,
-    distance: 25,
-    facilities: []
+    maxRange: 0,
+    location: ''
   })
+  const [filteredClubs, setFilteredClubs] = useState<Club[]>([])
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
 
   useEffect(() => {
     const fetchClubs = async () => {
@@ -83,38 +92,7 @@ export default function SearchPage() {
 
         console.log('Clubs data:', clubsData)
 
-        // Filter clubs based on facilities
-        const filteredClubsData = clubsData.map(club => ({
-          ...club,
-          courts: club.courts?.map(court => ({
-            ...court,
-            facilities: court.court_facilities || []
-          }))
-        })).filter(club => {
-          // If no facilities selected, include all clubs
-          if (filters.facilities.length === 0) return true
-
-          // Check if any court has all the selected facilities
-          return club.courts?.some(court => {
-            const courtFacilityNames = new Set(
-              court.facilities.map(f => f.name)
-            )
-            
-            console.log('Court facilities for', court.name, ':', Array.from(courtFacilityNames))
-            
-            const hasAllFacilities = filters.facilities.every(facilityId => {
-              const dbName = facilityNameMap[facilityId]
-              const hasFacility = courtFacilityNames.has(dbName)
-              console.log(`Checking ${facilityId} (${dbName}):`, hasFacility)
-              return hasFacility
-            })
-            
-            console.log('Has all facilities:', hasAllFacilities)
-            return hasAllFacilities
-          })
-        })
-
-        setClubs(filteredClubsData)
+        setClubs(clubsData)
       } catch (error) {
         console.error('Error:', error)
       } finally {
@@ -123,29 +101,58 @@ export default function SearchPage() {
     }
 
     fetchClubs()
-  }, [searchParams, filters])
+  }, [searchParams])
 
-  const filteredClubs = clubs.filter(club => {
-    // Price filter
-    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 100) {
-      const prices = club.courts?.map(court => court.price_per_hour) || []
-      if (!prices.some(price => 
-        price >= filters.priceRange[0] && price <= filters.priceRange[1]
-      )) {
-        return false
+  const applyFilters = (clubs: Club[]) => {
+    return clubs.filter(club => {
+      // Filter by rating
+      if (filters.rating > 0) {
+        const highestRatedCourt = club.courts.reduce((max, court) => 
+          court.rating > max.rating ? court : max
+        , club.courts[0])
+        
+        if (highestRatedCourt.rating < filters.rating) {
+          return false
+        }
       }
+
+      // Filter by facilities
+      if (filters.facilities.length > 0) {
+        // Check if any court has all the selected facilities
+        const hasAllFacilities = club.courts.some(court => {
+          const courtFacilities = new Set(court.court_facilities?.map(f => f.name) || [])
+          return filters.facilities.every(facilityId => {
+            const dbName = facilityNameMap[facilityId]
+            return courtFacilities.has(dbName)
+          })
+        })
+        
+        if (!hasAllFacilities) {
+          return false
+        }
+      }
+
+      // Filter by location and range
+      if (filters.location && filters.maxRange > 0 && club.distance) {
+        if (club.distance > filters.maxRange) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }
+
+  useEffect(() => {
+    const updateFilteredClubs = async () => {
+      setLoading(true)
+      const filtered = applyFilters(clubs)
+      setFilteredClubs(filtered)
+      setLoading(false)
     }
 
-    // Rating filter
-    if (filters.rating > 0) {
-      const courtRatings = club.courts?.map(court => court.rating || 0) || []
-      if (!courtRatings.some(rating => rating >= filters.rating)) {
-        return false
-      }
-    }
-
-    return true
-  })
+    updateFilteredClubs()
+  }, [clubs, filters])
 
   const handleSearch = (location: string, date: string, timeSlot: string) => {
     const params = new URLSearchParams()
@@ -160,10 +167,92 @@ export default function SearchPage() {
     setFilters(newFilters)
   }
 
+  const getCurrentLocation = () => {
+    setIsGettingLocation(true)
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser')
+      setIsGettingLocation(false)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.coords.latitude},${position.coords.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+          )
+          const data = await response.json()
+          if (data.results[0]) {
+            // Find the city component from the address
+            const cityComponent = data.results[0].address_components.find(
+              (component: any) => 
+                component.types.includes('locality') || 
+                component.types.includes('postal_town')
+            )
+            if (cityComponent) {
+              handleSearch(cityComponent.long_name, searchParams.get('date') || '', searchParams.get('time') || '')
+            }
+          }
+        } catch (error) {
+          console.error('Error getting location:', error)
+          alert('Could not get your location. Please try again.')
+        } finally {
+          setIsGettingLocation(false)
+        }
+      },
+      (error) => {
+        console.error('Error getting location:', error)
+        alert('Could not get your location. Please try again.')
+        setIsGettingLocation(false)
+      }
+    )
+  }
+
   return (
     <div className="container py-8">
       <div className="mb-8">
-        <SearchBar onSearch={handleSearch} initialLocation={searchParams.get('location') || ''} />
+        <div className="flex flex-col gap-4">
+          {/* Search Bar */}
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex-1 flex gap-2 items-center">
+              <LocationPicker
+                value={searchParams.get('location') || ''}
+                onChange={(value) => handleSearch(value, searchParams.get('date') || '', searchParams.get('time') || '')}
+                className="flex-1"
+              />
+              <Button
+                variant="ghost"
+                size="default"
+                className="border rounded-full h-10 w-10 p-0 hover:bg-neutral-100"
+                onClick={getCurrentLocation}
+                disabled={isGettingLocation}
+              >
+                {isGettingLocation ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-neutral-500" />
+                ) : (
+                  <MapPin className="h-4 w-4 text-neutral-500" />
+                )}
+              </Button>
+            </div>
+            <DatePicker
+              value={searchParams.get('date') || ''}
+              onChange={(value) => handleSearch(searchParams.get('location') || '', value, searchParams.get('time') || '')}
+            />
+            <TimeSelector
+              value={searchParams.get('time') || ''}
+              onChange={(value) => handleSearch(searchParams.get('location') || '', searchParams.get('date') || '', value)}
+            />
+            <Button 
+              variant="default"
+              size="default"
+              className="h-10 rounded-full"
+              onClick={() => handleSearch('', '', '')}
+            >
+              Clear Filters
+              <X className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">

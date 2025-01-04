@@ -1,109 +1,104 @@
 'use client'
 
-import { Slider } from "@/components/ui/slider"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Star } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
+import { Slider } from "@/components/ui/slider"
+import { useState } from "react"
 
 interface FilterSidebarProps {
-  onFiltersChange: (filters: {
-    priceRange: [number, number]
-    rating: number
-    distance: number
-    facilities: string[]
-  }) => void
   initialFilters: {
-    priceRange: [number, number]
-    rating: number
-    distance: number
     facilities: string[]
+    rating: number
+    maxRange: number
+    location: string
   }
+  onFiltersChange: (filters: {
+    facilities: string[]
+    rating: number
+    maxRange: number
+    location: string
+  }) => void
 }
 
-const facilities = [
-  {
-    id: 'changing_rooms',
-    label: 'Changing Rooms',
-    description: 'Includes showers and lockers'
-  },
-  {
-    id: 'parking',
-    label: 'Parking',
-    description: 'Free or paid parking available'
-  },
-  {
-    id: 'restaurant',
-    label: 'Restaurant',
-    description: 'Restaurant, café, or bar for drinks and snacks'
-  },
-  {
-    id: 'equipment_rental',
-    label: 'Equipment Rental',
-    description: 'Rent rackets and balls'
-  },
-  {
-    id: 'padel_shop',
-    label: 'Padel Shop',
-    description: 'Shop for buying equipment'
-  },
-  {
-    id: 'bike_storage',
-    label: 'Bike Storage',
-    description: 'For cyclists'
-  },
-  {
-    id: 'wheelchair_access',
-    label: 'Wheelchair Access',
-    description: 'Accessible for people with disabilities'
-  },
-  {
-    id: 'charging_points',
-    label: 'Charging Points',
-    description: 'For electric cars or bikes'
-  }
-]
+export function FilterSidebar({
+  initialFilters,
+  onFiltersChange,
+}: FilterSidebarProps) {
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
 
-export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebarProps) {
-  const handlePriceChange = (value: number[]) => {
+  const handleFacilityChange = (facility: string) => {
+    const newFacilities = initialFilters.facilities.includes(facility)
+      ? initialFilters.facilities.filter((f) => f !== facility)
+      : [...initialFilters.facilities, facility]
+
     onFiltersChange({
       ...initialFilters,
-      priceRange: [value[0], value[1]]
+      facilities: newFacilities,
     })
   }
 
-  const handleRatingChange = (rating: number) => {
+  const handleRatingChange = (value: number) => {
     onFiltersChange({
       ...initialFilters,
-      rating
+      rating: value
     })
   }
 
-  const handleDistanceChange = (value: number[]) => {
+  const handleRangeChange = (value: number[]) => {
     onFiltersChange({
       ...initialFilters,
-      distance: value[0]
+      maxRange: value[0]
     })
   }
 
-  const handleFacilityChange = (facilityId: string, checked: boolean) => {
-    const newFacilities = checked
-      ? [...initialFilters.facilities, facilityId]
-      : initialFilters.facilities.filter(id => id !== facilityId)
-    
+  const handleLocationChange = (location: string) => {
     onFiltersChange({
       ...initialFilters,
-      facilities: newFacilities
+      location
     })
+  }
+
+  const getCurrentLocation = () => {
+    setIsGettingLocation(true)
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser')
+      setIsGettingLocation(false)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.coords.latitude},${position.coords.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+          )
+          const data = await response.json()
+          if (data.results[0]) {
+            handleLocationChange(data.results[0].formatted_address)
+          }
+        } catch (error) {
+          console.error('Error getting location:', error)
+          alert('Could not get your location. Please try again.')
+        } finally {
+          setIsGettingLocation(false)
+        }
+      },
+      (error) => {
+        console.error('Error getting location:', error)
+        alert('Could not get your location. Please try again.')
+        setIsGettingLocation(false)
+      }
+    )
   }
 
   const clearFilters = () => {
     onFiltersChange({
-      priceRange: [0, 100],
+      facilities: [],
       rating: 0,
-      distance: 25,
-      facilities: []
+      maxRange: 0,
+      location: '',
     })
   }
 
@@ -122,21 +117,19 @@ export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebar
         </div>
 
         <div className="space-y-8">
-          {/* Price Range */}
-          <div>
-            <Label className="text-sm font-medium mb-4 block">Price per hour</Label>
-            <div className="px-2">
-              <Slider
-                defaultValue={[initialFilters.priceRange[0], initialFilters.priceRange[1]]}
-                min={0}
-                max={100}
-                step={5}
-                onValueChange={handlePriceChange}
-              />
-            </div>
-            <div className="flex justify-between mt-2 text-sm text-neutral-600">
-              <span>€{initialFilters.priceRange[0]}</span>
-              <span>€{initialFilters.priceRange[1]}</span>
+          {/* Maximum Range */}
+          <div className="space-y-2">
+            <Label>Maximum range (km)</Label>
+            <Slider
+              min={0}
+              max={100}
+              step={5}
+              value={[initialFilters.maxRange]}
+              onValueChange={handleRangeChange}
+            />
+            <div className="flex justify-between text-sm text-neutral-600">
+              <span>{initialFilters.maxRange === 0 ? 'Any' : `${initialFilters.maxRange}km`}</span>
+              <span>100km</span>
             </div>
           </div>
 
@@ -146,7 +139,7 @@ export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebar
           <div>
             <Label className="text-sm font-medium mb-4 block">Minimum rating</Label>
             <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((rating) => (
+              {[1, 2, 3, 4, 4.5].map((rating) => (
                 <Button
                   key={rating}
                   variant={initialFilters.rating === rating ? "default" : "outline"}
@@ -162,49 +155,29 @@ export function FilterSidebar({ onFiltersChange, initialFilters }: FilterSidebar
 
           <Separator />
 
-          {/* Distance */}
-          <div>
-            <Label className="text-sm font-medium mb-4 block">Maximum distance</Label>
-            <div className="px-2">
-              <Slider
-                defaultValue={[initialFilters.distance]}
-                max={50}
-                step={5}
-                onValueChange={handleDistanceChange}
-              />
-            </div>
-            <div className="mt-2 text-sm text-neutral-600">
-              Within {initialFilters.distance}km
-            </div>
-          </div>
-
-          <Separator />
-
           {/* Facilities */}
           <div>
             <Label className="text-sm font-medium mb-4 block">Facilities</Label>
-            <div className="space-y-3">
-              {facilities.map((facility) => (
-                <div key={facility.id} className="flex items-start space-x-2">
-                  <Checkbox
-                    id={facility.id}
-                    checked={initialFilters.facilities.includes(facility.id)}
-                    onCheckedChange={(checked) => 
-                      handleFacilityChange(facility.id, checked as boolean)
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor={facility.id}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {facility.label}
-                    </label>
-                    <p className="text-sm text-neutral-600">
-                      {facility.description}
-                    </p>
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'changing_rooms', label: 'Changing Rooms' },
+                { id: 'parking', label: 'Parking' },
+                { id: 'restaurant', label: 'Restaurant' },
+                { id: 'equipment_rental', label: 'Equipment Rental' },
+                { id: 'padel_shop', label: 'Padel Shop' },
+                { id: 'bike_storage', label: 'Bike Storage' },
+                { id: 'wheelchair_access', label: 'Wheelchair Access' },
+                { id: 'charging_points', label: 'Charging Points' },
+              ].map((facility) => (
+                <Button
+                  key={facility.id}
+                  variant={initialFilters.facilities.includes(facility.id) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFacilityChange(facility.id)}
+                  className="justify-start"
+                >
+                  {facility.label}
+                </Button>
               ))}
             </div>
           </div>

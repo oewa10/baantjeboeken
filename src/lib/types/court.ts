@@ -8,6 +8,7 @@ export interface Club {
   name: string
   city: string
   location?: string
+  courts: Court[]
   created_at: string
   updated_at: string
 }
@@ -31,6 +32,7 @@ export interface Court {
   updated_at: string
   club?: Club
   facilities?: Facility[]
+  court_facilities?: Facility[]
 }
 
 export interface Availability {

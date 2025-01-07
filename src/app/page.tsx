@@ -5,17 +5,18 @@ import { FeaturedClubs } from "@/components/home/FeaturedClubs"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { Club } from "@/lib/types/court"
 
 export default function Home() {
   const router = useRouter()
-  const [featuredClubs, setFeaturedClubs] = useState([])
+  const [featuredClubs, setFeaturedClubs] = useState<Club[]>([])
   const supabase = createClient()
 
   useEffect(() => {
     const fetchClubs = async () => {
       const { data } = await supabase
         .from('clubs')
-        .select('*')
+        .select('*, courts(*)')
         .limit(6)
       setFeaturedClubs(data || [])
     }

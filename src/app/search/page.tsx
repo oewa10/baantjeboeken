@@ -235,8 +235,8 @@ export default function SearchPage() {
               </Button>
             </div>
             <DatePicker
-              value={searchParams.get('date') || ''}
-              onChange={(value) => handleSearch(searchParams.get('location') || '', value, searchParams.get('time') || '')}
+              value={searchParams.get('date') ? new Date(searchParams.get('date')!) : undefined}
+              onChange={(value) => handleSearch(searchParams.get('location') || '', value.toISOString(), searchParams.get('time') || '')}
             />
             <TimeSelector
               value={searchParams.get('time') || ''}

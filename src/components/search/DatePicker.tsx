@@ -15,7 +15,7 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ value, onChange, className, minDate, maxDate }: DatePickerProps) {
-  const [currentDate, setCurrentDate] = React.useState(value || new Date())
+  const [currentDate, setCurrentDate] = React.useState<Date>(value || new Date())
   const [isOpen, setIsOpen] = React.useState(false)
 
   const ref = useClickOutside(() => setIsOpen(false))

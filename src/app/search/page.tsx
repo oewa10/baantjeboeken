@@ -67,13 +67,21 @@ export default function SearchPage() {
             name,
             city,
             location,
+            created_at,
+            updated_at,
             courts (
               id,
               name,
               type,
               price_per_hour,
               rating,
+              description,
+              city,
+              created_at,
+              updated_at,
               court_facilities (
+                id,
+                court_id,
                 name
               )
             )
@@ -92,7 +100,7 @@ export default function SearchPage() {
 
         console.log('Clubs data:', clubsData)
 
-        setClubs(clubsData)
+        setClubs(clubsData as Club[])
       } catch (error) {
         console.error('Error:', error)
       } finally {

@@ -16,9 +16,32 @@ export default function Home() {
     const fetchClubs = async () => {
       const { data } = await supabase
         .from('clubs')
-        .select('*, courts(*)')
+        .select(`
+          id,
+          name,
+          city,
+          location,
+          created_at,
+          updated_at,
+          courts (
+            id,
+            name,
+            type,
+            price_per_hour,
+            rating,
+            description,
+            city,
+            created_at,
+            updated_at,
+            court_facilities (
+              id,
+              court_id,
+              name
+            )
+          )
+        `)
         .limit(6)
-      setFeaturedClubs(data || [])
+      setFeaturedClubs(data as Club[] || [])
     }
     fetchClubs()
   }, [])
